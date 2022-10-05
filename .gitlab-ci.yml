@@ -1,0 +1,34 @@
+stages:
+  - version-closing
+
+"Version Closing":
+  stage: version-closing
+  image: python:3.8.5
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" && $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_COMMIT_MESSAGE !~ /Closing version./'
+  script:
+    - git config --global user.email "$CI_EMAIL_USER"
+    - git config --global user.name "$CI_NAME_USER"
+    - git clone https://gitlab-ci-token:$CI_TOKEN@gitlab.com/andersongomes/changelog-consolidator-gitlab.git HEAD:develop
+    - version=$(date +"%Y.%m.%d.%H%M")
+    - colons=":"
+    - echo -e "## v$version\n" | tee -a CHANGELOG-AUX.md
+    - if [ `find unreleased/additions/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then cat unreleased/additions/* >> unreleased/additions/added.txt; fi
+    - if [ `find unreleased/additions/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then echo -e "### Added\n" | tee -a CHANGELOG-AUX.md; fi
+    - if [ `find unreleased/additions/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then cat unreleased/additions/added.txt >> CHANGELOG-AUX.md; fi
+    - if [ `find unreleased/additions/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then rm unreleased/additions/*.txt; fi
+    - if [ `find unreleased/improvements/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then cat unreleased/improvements/* >> unreleased/improvements/improvements.txt; fi
+    - if [ `find unreleased/improvements/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then echo -e "\n### Improvements\n" | tee -a CHANGELOG-AUX.md; fi
+    - if [ `find unreleased/improvements/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then cat unreleased/improvements/improvements.txt >> CHANGELOG-AUX.md; fi
+    - if [ `find unreleased/improvements/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then rm unreleased/improvements/*.txt; fi
+    - if [ `find unreleased/corrections/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then cat unreleased/corrections/* >> unreleased/corrections/corrections.txt; fi
+    - if [ `find unreleased/corrections/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then echo -e "\n### Fixed\n" | tee -a CHANGELOG-AUX.md; fi
+    - if [ `find unreleased/corrections/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then cat unreleased/corrections/corrections.txt >> CHANGELOG-AUX.md; fi
+    - if [ `find unreleased/corrections/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then echo -e "\n" | tee -a CHANGELOG-AUX.md; fi
+    - if [ `find unreleased/corrections/ -type f -name "*.txt" | wc -l` -ge 1 ] ; then rm unreleased/corrections/*.txt; fi
+    - cat CHANGELOG-AUX.md CHANGELOG.md >> CHANGELOG-FINAL.md
+    - rm CHANGELOG-AUX.md CHANGELOG.md
+    - mv CHANGELOG-FINAL.md CHANGELOG.md
+    - git add -u
+    - git commit -m 'Closing version.'
+    - git push https://gitlab-ci-token:$CI_TOKEN@gitlab.com/andersongomes/changelog-consolidator-gitlab.git HEAD:develop

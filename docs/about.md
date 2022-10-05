@@ -1,0 +1,1 @@
+# About changelog-consolidator-gitlab stack

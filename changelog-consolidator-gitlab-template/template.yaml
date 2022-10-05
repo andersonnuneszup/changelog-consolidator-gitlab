@@ -1,0 +1,4 @@
+name: changelog-consolidator-gitlab-template
+description: Template destined to automate the changelog creation.
+types:
+  - app-template
